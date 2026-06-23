@@ -61,6 +61,47 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* ===== STRUK / FAKTUR CETAK (Thermal Printer 58mm / 80mm) ===== */
+        #receipt-print-area {
+            display: none;
+        }
+        .receipt-paper {
+            font-family: 'Roboto Mono', monospace;
+            color: #000;
+            background: #fff;
+            line-height: 1.45;
+            padding: 8px 6px;
+            box-sizing: border-box;
+            word-break: break-word;
+        }
+        .receipt-paper .r-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+        }
+        .receipt-paper .r-dashed {
+            border-top: 1px dashed #000;
+        }
+
+        /* Saat dicetak: sembunyikan seluruh isi halaman, tampilkan HANYA struk,
+           dan paksa ukuran kertas (@page) mengikuti pengaturan agar PAS / full
+           dengan lebar mesin printer thermal (diatur dinamis via #dynamic-print-style) */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #receipt-print-area, #receipt-print-area * {
+                visibility: visible;
+            }
+            #receipt-print-area {
+                display: block !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col pb-16 md:pb-0">
@@ -455,7 +496,45 @@
                     </div>
                 </div>
 
-                <!-- Manajemen Katalog Jasa & Sparepart -->
+                <!-- Pengaturan Cetak Struk / Faktur (Auto-Fit Mesin Printer Thermal) -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-print text-emerald-500"></i>
+                        Pengaturan Cetak Struk / Faktur
+                    </h3>
+                    <p class="text-xs text-gray-500 -mt-2">Ukuran struk otomatis menyesuaikan penuh dengan lebar kertas mesin printer thermal Anda (tanpa terpotong / tanpa sisa blank).</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Alamat Toko</label>
+                                <input type="text" id="cfg-store-address" onkeyup="updateReceiptSettings()" placeholder="cth: Jl. Mawar No. 5, Karanganyar" class="w-full border border-gray-200 px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">No. Telepon / WhatsApp</label>
+                                <input type="text" id="cfg-store-phone" onkeyup="updateReceiptSettings()" placeholder="cth: 0812-3456-7890" class="w-full border border-gray-200 px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Catatan Footer Struk</label>
+                                <input type="text" id="cfg-receipt-footer" onkeyup="updateReceiptSettings()" placeholder="Terima kasih atas kunjungan Anda!" class="w-full border border-gray-200 px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800">
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Ukuran Kertas Mesin Printer</label>
+                                <select id="cfg-paper-size" onchange="updateReceiptSettings()" class="w-full border border-gray-200 px-3 py-2 rounded-xl text-sm bg-white outline-none focus:ring-2 focus:ring-emerald-500 text-gray-800">
+                                    <option value="58">58mm (Thermal Mini - Umum)</option>
+                                    <option value="80">80mm (Thermal Standar Kasir)</option>
+                                </select>
+                                <p class="text-[10px] text-gray-400 mt-1">Pilih sesuai gulungan kertas yang dipasang di mesin printer kasir Anda. Lebar hasil cetak akan otomatis pas (full), bukan ukuran A4.</p>
+                            </div>
+                            <label class="flex items-center gap-2.5 p-3 bg-emerald-50 border border-emerald-200 rounded-xl cursor-pointer">
+                                <input type="checkbox" id="cfg-auto-print" onchange="updateReceiptSettings()" class="h-4 w-4 accent-emerald-600">
+                                <span class="text-xs font-semibold text-emerald-800">Cetak struk otomatis setiap transaksi selesai</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
                     <div class="flex justify-between items-center border-b border-gray-100 pb-3">
                         <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
@@ -525,6 +604,30 @@
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                 <button onclick="closeProductModal()" class="px-4 py-2 border border-gray-200 rounded-xl text-xs text-gray-500 font-semibold hover:bg-gray-100">Batal</button>
                 <button onclick="saveProduct()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm">Simpan Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AREA KHUSUS CETAK STRUK (tersembunyi di layar, hanya tampil saat window.print()) -->
+    <div id="receipt-print-area"></div>
+
+    <!-- MODAL PRATINJAU & CETAK STRUK -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[92vh]">
+            <div class="px-6 py-4 bg-gray-800 text-white flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-receipt"></i> Pratinjau Struk
+                </h3>
+                <button onclick="closeReceiptModal()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="overflow-y-auto p-5 bg-gray-100 flex-grow flex justify-center">
+                <div id="receipt-preview-content" class="bg-white shadow-md"></div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 shrink-0">
+                <button onclick="closeReceiptModal()" class="px-4 py-2 border border-gray-200 rounded-xl text-xs text-gray-500 font-semibold hover:bg-gray-100">Tutup</button>
+                <button onclick="triggerPrintReceipt()" class="px-5 py-2 bg-gray-800 hover:bg-black text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Struk Sekarang
+                </button>
             </div>
         </div>
     </div>
@@ -617,7 +720,14 @@
             cart: [],
             transactions: [],
             syncQueue: [],
-            
+
+            // Pengaturan Cetak Struk / Faktur
+            storeAddress: "",
+            storePhone: "",
+            receiptPaperSize: "58", // '58' atau '80' (mm) - lebar kertas thermal printer
+            receiptFooter: "Terima kasih atas kunjungan Anda!",
+            autoPrintReceipt: false,
+
             gClientId: "",
             gAccessToken: "",
             gSpreadsheetId: "",
@@ -643,6 +753,13 @@
             document.getElementById('cfg-primary-text').value = state.primaryColor;
             document.getElementById('cfg-font').value = state.fontFamily;
             document.getElementById('g-client-id').value = state.gClientId;
+
+            // Set input pengaturan struk/faktur sesuai state tersimpan
+            document.getElementById('cfg-store-address').value = state.storeAddress || '';
+            document.getElementById('cfg-store-phone').value = state.storePhone || '';
+            document.getElementById('cfg-paper-size').value = state.receiptPaperSize || '58';
+            document.getElementById('cfg-receipt-footer').value = state.receiptFooter || 'Terima kasih atas kunjungan Anda!';
+            document.getElementById('cfg-auto-print').checked = !!state.autoPrintReceipt;
 
             applyVisualSettings();
             renderCatalog();
@@ -976,6 +1093,7 @@
                 serviceStatus: serviceStatus,
                 complaint: complaint || "-",
                 items: JSON.stringify(state.cart.map(i => `${i.name} (${i.qty}x)`)),
+                cartSnapshot: state.cart.map(i => ({ ...i })),
                 subtotal: subtotal,
                 discount: discount,
                 total: currentTotalTagihan,
@@ -1002,8 +1120,130 @@
 
             showToast(`Transaksi ${txId} Berhasil Disimpan!`, "success");
 
+            // Tampilkan struk: cetak otomatis jika diaktifkan, atau tampilkan pratinjau dulu
+            if (state.autoPrintReceipt) {
+                lastReceiptTx = newTx;
+                printReceiptDirect(newTx);
+            } else {
+                showReceiptModal(newTx);
+            }
+
             // Trigger integrasi cloud sheets jika aktif
             syncAllPendingQueue();
+        }
+
+        // ============================================================
+        // FITUR CETAK STRUK / FAKTUR — Auto-Fit Lebar Mesin Printer Thermal (58mm / 80mm)
+        // ============================================================
+        let lastReceiptTx = null; // Menyimpan transaksi yang sedang dipratinjau/dicetak
+
+        // Membangun HTML struk dari data transaksi. Rincian per-item dipakai dari
+        // cartSnapshot (transaksi baru). Transaksi lama (sebelum fitur ini ada)
+        // tetap bisa dicetak ulang dengan fallback ke daftar nama item saja.
+        function buildReceiptHTML(tx) {
+            const paperMM = (state.receiptPaperSize === '80') ? 80 : 58;
+            const baseFont = (paperMM === 80) ? '12px' : '10.5px';
+            const titleFont = (paperMM === 80) ? '15px' : '13px';
+            const dateStr = new Date(tx.date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+
+            let itemsHTML = '';
+            if (Array.isArray(tx.cartSnapshot) && tx.cartSnapshot.length > 0) {
+                itemsHTML = tx.cartSnapshot.map(item => `
+                    <div style="margin-bottom:4px;">
+                        <div>${item.name}</div>
+                        <div class="r-row">
+                            <span>${item.qty} x ${Number(item.price).toLocaleString('id-ID')}</span>
+                            <span>${Number(item.qty * item.price).toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                let names = [];
+                try { names = JSON.parse(tx.items); } catch (e) { names = [String(tx.items || '-')]; }
+                itemsHTML = names.map(n => `<div style="margin-bottom:2px;">${n}</div>`).join('');
+            }
+
+            const storeName = state.brandName || "Toko Saya";
+            const storeAddress = state.storeAddress || "";
+            const storePhone = state.storePhone || "";
+            const footerNote = state.receiptFooter || "Terima kasih atas kunjungan Anda!";
+            const discountVal = Number(tx.discount) || 0;
+
+            return `
+            <div class="receipt-paper" style="width:${paperMM}mm; font-size:${baseFont};">
+                <div style="text-align:center; margin-bottom:6px;">
+                    <div style="font-weight:700; font-size:${titleFont}; text-transform:uppercase;">${storeName}</div>
+                    ${storeAddress ? `<div style="font-size:9px;">${storeAddress}</div>` : ''}
+                    ${storePhone ? `<div style="font-size:9px;">${storePhone}</div>` : ''}
+                </div>
+                <div class="r-dashed" style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px;">
+                    <div>No: ${tx.id}</div>
+                    <div>${dateStr}</div>
+                    ${tx.customerName && tx.customerName !== '-' ? `<div>Plg: ${tx.customerName}</div>` : ''}
+                    ${tx.deviceType && tx.deviceType !== '-' ? `<div>Unit: ${tx.deviceType}</div>` : ''}
+                </div>
+                <div style="margin-bottom:4px;">
+                    ${itemsHTML}
+                </div>
+                <div class="r-dashed" style="padding-top:5px;">
+                    <div class="r-row"><span>Subtotal</span><span>${Number(tx.subtotal).toLocaleString('id-ID')}</span></div>
+                    ${discountVal > 0 ? `<div class="r-row"><span>Diskon</span><span>-${discountVal.toLocaleString('id-ID')}</span></div>` : ''}
+                    <div class="r-row" style="font-weight:700; margin-top:2px;"><span>TOTAL</span><span>${Number(tx.total).toLocaleString('id-ID')}</span></div>
+                    <div class="r-row"><span>Bayar</span><span>${Number(tx.paid).toLocaleString('id-ID')}</span></div>
+                    <div class="r-row"><span>Kembali</span><span>${Number(tx.change).toLocaleString('id-ID')}</span></div>
+                </div>
+                <div style="text-align:center; margin-top:10px; font-size:9px;">${footerNote}</div>
+            </div>
+            `;
+        }
+
+        // Mengatur ukuran halaman cetak (@page) secara DINAMIS mengikuti pengaturan
+        // lebar kertas printer (58mm/80mm) — inilah yang membuat hasil cetak otomatis
+        // PAS / penuh dengan mesin printer struk, bukan terpotong ukuran A4/Letter.
+        function setPrintPageSize() {
+            const paperMM = (state.receiptPaperSize === '80') ? 80 : 58;
+            let styleTag = document.getElementById('dynamic-print-style');
+            if (!styleTag) {
+                styleTag = document.createElement('style');
+                styleTag.id = 'dynamic-print-style';
+                document.head.appendChild(styleTag);
+            }
+            styleTag.innerHTML = `@media print { @page { size: ${paperMM}mm auto; margin: 0; } }`;
+        }
+
+        // Tampilkan modal pratinjau struk (dipanggil otomatis setelah checkout, atau saat cetak ulang)
+        function showReceiptModal(tx) {
+            lastReceiptTx = tx;
+            document.getElementById('receipt-preview-content').innerHTML = buildReceiptHTML(tx);
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // Eksekusi cetak fisik dari modal pratinjau (tombol "Cetak Struk Sekarang")
+        function triggerPrintReceipt() {
+            if (!lastReceiptTx) return;
+            printReceiptDirect(lastReceiptTx);
+        }
+
+        // Render struk ke area cetak khusus & panggil dialog print browser.
+        // Browser akan otomatis mengirim ukuran kertas sesuai @page ke driver printer thermal.
+        function printReceiptDirect(tx) {
+            setPrintPageSize();
+            document.getElementById('receipt-print-area').innerHTML = buildReceiptHTML(tx);
+            setTimeout(() => window.print(), 150);
+        }
+
+        // Cetak ulang struk dari Riwayat Transaksi
+        function printReceiptFromHistory(txId) {
+            const tx = state.transactions.find(t => t.id === txId);
+            if (!tx) {
+                showToast("Data transaksi tidak ditemukan!", "error");
+                return;
+            }
+            showReceiptModal(tx);
         }
 
         // TRACKER SERVICE HP RENDER
@@ -1114,6 +1354,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-center">
+                            <button onclick="printReceiptFromHistory('${tx.id}')" class="text-blue-500 hover:text-blue-700 transition mr-3" title="Cetak Ulang Struk"><i class="fa-solid fa-print"></i></button>
                             <button onclick="deleteTransaction('${tx.id}')" class="text-red-500 hover:text-red-700 transition" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
                         </td>
                     </tr>
@@ -1556,6 +1797,16 @@
             document.documentElement.style.setProperty('--btn-color', primary);
             document.documentElement.style.setProperty('--font-family', font);
             document.getElementById('cfg-primary-text').value = primary;
+        }
+
+        // SIMPAN PENGATURAN STRUK / FAKTUR (Alamat, Telepon, Ukuran Kertas, Footer, Auto Print)
+        function updateReceiptSettings() {
+            state.storeAddress = document.getElementById('cfg-store-address').value.trim();
+            state.storePhone = document.getElementById('cfg-store-phone').value.trim();
+            state.receiptPaperSize = document.getElementById('cfg-paper-size').value;
+            state.receiptFooter = document.getElementById('cfg-receipt-footer').value.trim() || "Terima kasih atas kunjungan Anda!";
+            state.autoPrintReceipt = document.getElementById('cfg-auto-print').checked;
+            saveToLocalStorage();
         }
 
         // EXPORT & RESET DATA SYSTEM
