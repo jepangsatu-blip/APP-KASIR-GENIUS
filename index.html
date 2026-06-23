@@ -1461,23 +1461,34 @@
             }
         }
 
-        // 1. AUTENTIKASI OAUTH2 LANGSUNG (Implicit Flow)
-        function authenticateGoogle() {
-            const clientId = document.getElementById('g-client-id').value.trim();
-            if (!clientId) {
-                showToast("Harap masukkan Google Client ID Anda terlebih dahulu di pengaturan!", "error");
-                return;
-            }
-            state.gClientId = clientId;
-            saveToLocalStorage();
+      function authenticateGoogle() {
+    const clientId = document.getElementById('g-client-id').value.trim();
+    if (!clientId) {
+        showToast("492097271847-l3s1fcen8a6vkgiuia4p6s3g3007i6l7.apps.googleusercontent.com", "error");
+        return;
+    }
 
-            const redirectUri = window.location.origin + window.location.pathname;
-            const scope = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
-            
-            // Redirect ke halaman login google
-            window.location.href = authUrl;
-        }
+    state.gClientId = clientId;
+    saveToLocalStorage();
+
+    // 1. Ambil URL halaman saat ini (ini akan jadi redirect_uri)
+    const redirectUri = window.location.origin + window.location.pathname;
+    
+    // 2. Tentukan scope izin yang dibutuhkan (contoh: untuk baca/tulis Spreadsheet)
+    const scope = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+
+    // 3. Buat URL OAuth2 yang BENAR
+    const authUrl = 
+        'https://accounts.google.com/o/oauth2/v2/auth?' +
+        'client_id=' + encodeURIComponent(clientId) +
+        '&redirect_uri=' + encodeURIComponent(redirectUri) +
+        '&response_type=token' +
+        '&scope=' + encodeURIComponent(scope) +
+        '&include_granted_scopes=true';
+
+    // 4. Redirect ke Google
+    window.location.href = authUrl;
+}
 
         // Tangkap Access Token di URL Hash setelah login berhasil redirect kembali
         function checkOAuthCallback() {
