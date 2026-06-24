@@ -1,6 +1,6 @@
 {
-  "name": "KasirKu",
-  "short_name": "KasirKu",
+  "name": "Apps Genius",
+  "short_name": "Apps Genius",
   "description": "Aplikasi kasir digital untuk UMKM",
   "start_url": "./index.html",
   "display": "standalone",
