@@ -1,4 +1,4 @@
-const CACHE = 'kasirku-v1';
+const CACHE = 'Kasirgenius-v1';
 const FILES = [
   './',
   './index.html',
